@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:podcast="https://podcastindex.org/namespace/1.0">
+<channel>
+<title>我的无限电台</title>
+<link>https://milesradford99.github.io/personal-podcast/</link>
+<description>由我的 Notion 技术知识库自动生成的个人播客，永远有下一段可听。</description>
+<language>zh-cn</language>
+<itunes:author>fly</itunes:author>
+<itunes:type>serial</itunes:type>
+<itunes:explicit>false</itunes:explicit>
+<itunes:image href="https://milesradford99.github.io/personal-podcast/cover.png"/>
+<item>
+<title>缓存满了该扔谁：从 LRU、LFU 到 S3-FIFO</title>
+<description>深度对谈。从办公桌的比喻讲起，拆解 LRU 和 LFU 怎么做到 O(1)、各自栽在哪，再看 Caffeine、S3-FIFO 和 Redis 的工业解法。</description>
+<guid isPermaLink="false">2026-11-25-cache-eviction</guid>
+<pubDate>Wed, 25 Nov 2026 04:37:34 +0000</pubDate>
+<enclosure url="https://github.com/milesradford99/personal-podcast/releases/download/ep-2026-11-25-cache-eviction/2026-11-25-cache-eviction.mp3" length="4533050" type="audio/mpeg"/>
+<itunes:duration>00:09:25</itunes:duration>
+<itunes:episode>1</itunes:episode>
+<itunes:episodeType>full</itunes:episodeType>
+<podcast:chapters url="https://milesradford99.github.io/personal-podcast/chapters/2026-11-25-cache-eviction.json" type="application/json+chapters"/>
+</item>
+</channel>
+</rss>
