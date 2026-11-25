@@ -1,0 +1,38 @@
+name: 渲染并发布新集
+
+on:
+  push:
+    branches: [main]
+    paths: ["episodes/**", "podcast.json", "tools/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 安装依赖
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          pip install -q edge-tts mutagen
+      - name: 渲染并上传
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python tools/render.py --publish
+      - name: 提交 RSS 和播放器数据
+        run: |
+          git config user.name "podcast-bot"
+          git config user.email "podcast-bot@users.noreply.github.com"
+          git add docs
+          git diff --cached --quiet || git commit -m "发布新集 [skip ci]"
+          git push

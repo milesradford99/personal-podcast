@@ -1,0 +1,14 @@
+{
+  "title": "我的无限电台",
+  "description": "由我的 Notion 技术知识库自动生成的个人播客，永远有下一段可听。",
+  "author": "fly",
+  "language": "zh-cn",
+  "repo": "milesradford99/personal-podcast",
+  "site_url": "https://milesradford99.github.io/personal-podcast/",
+  "notion_root": "https://app.notion.com/p/423d45e52667811ebec7cbf258ed3705",
+  "per_run_minutes": 60,
+  "voices": {
+    "A": {"name": "云健", "voice": "zh-CN-YunjianNeural", "rate": "+5%"},
+    "B": {"name": "晓晓", "voice": "zh-CN-XiaoxiaoNeural", "rate": "+5%"}
+  }
+}

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>我的无限电台</title>
+<link rel="manifest" href="manifest.json">
+<style>
+  :root { color-scheme: light dark; --accent: #d97757; }
+  body { font: 16px/1.5 -apple-system, "PingFang SC", "Noto Sans SC", sans-serif; margin: 0; padding: 16px; max-width: 640px; margin-inline: auto; }
+  h1 { font-size: 20px; margin: 4px 0 12px; }
+  .now { position: sticky; top: 0; background: Canvas; padding: 8px 0 12px; border-bottom: 1px solid #8884; }
+  .now .t { font-weight: 600; }
+  .now .c { color: #888; font-size: 14px; min-height: 21px; }
+  audio { width: 100%; margin-top: 8px; }
+  .ctl { display: flex; gap: 8px; margin-top: 8px; }
+  .ctl button { flex: 1; padding: 10px; border-radius: 10px; border: 1px solid #8886; background: transparent; font-size: 15px; }
+  ol { padding: 0; list-style: none; }
+  li.ep { padding: 10px 0; border-bottom: 1px solid #8882; }
+  li.ep.on > .h { color: var(--accent); font-weight: 600; }
+  li.ep.done > .h { opacity: .55; }
+  .h { cursor: pointer; }
+  .meta { color: #888; font-size: 13px; }
+  .chs { margin: 6px 0 0 12px; font-size: 14px; }
+  .chs div { cursor: pointer; padding: 2px 0; }
+  .chs div.on { color: var(--accent); }
+  .rss { font-size: 13px; color: #888; word-break: break-all; }
+</style>
+</head>
+<body>
+<h1>我的无限电台</h1>
+<div class="now">
+  <div class="t" id="nt">加载中…</div>
+  <div class="c" id="nc"></div>
+  <audio id="au" controls preload="metadata"></audio>
+  <div class="ctl">
+    <button id="prevCh">上一章</button>
+    <button id="back">-15 秒</button>
+    <button id="fwd">+30 秒</button>
+    <button id="nextCh">下一章</button>
+    <button id="nextEp">下一集</button>
+  </div>
+</div>
+<ol id="list"></ol>
+<p class="rss">用播客 App 订阅：<span id="rss"></span></p>
+<script>
+const au = document.getElementById('au');
+const KEY = 'radio-state-v1';
+let eps = [], cur = 0;
+const st = JSON.parse(localStorage.getItem(KEY) || '{"id":null,"t":0,"done":[]}');
+const save = () => localStorage.setItem(KEY, JSON.stringify(st));
+const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+document.getElementById('rss').textContent = new URL('feed.xml', location.href).href;
+
+function chIndex() {
+  const ch = eps[cur]?.chapters || [];
+  let i = 0; ch.forEach((c, k) => { if (au.currentTime >= c.startTime - 0.2) i = k; });
+  return i;
+}
+function render() {
+  const list = document.getElementById('list');
+  list.innerHTML = '';
+  eps.forEach((e, k) => {
+    const li = document.createElement('li');
+    li.className = 'ep' + (k === cur ? ' on' : '') + (st.done.includes(e.id) ? ' done' : '');
+    li.innerHTML = `<div class="h"></div><div class="meta"></div>`;
+    li.querySelector('.h').textContent = `${e.seq}. ${e.title}`;
+    li.querySelector('.meta').textContent = `${e.format || ''} · ${Math.round(e.duration / 60)} 分钟`;
+    li.querySelector('.h').onclick = () => load(k, 0, true);
+    if (k === cur) {
+      const chs = document.createElement('div'); chs.className = 'chs';
+      e.chapters.forEach((c, j) => {
+        const d = document.createElement('div');
+        d.textContent = `${fmt(c.startTime)}  ${c.title}`;
+        d.dataset.j = j;
+        d.onclick = () => { au.currentTime = c.startTime; au.play(); };
+        chs.appendChild(d);
+      });
+      li.appendChild(chs);
+    }
+    list.appendChild(li);
+  });
+  updateNow();
+}
+function updateNow() {
+  const e = eps[cur]; if (!e) return;
+  const j = chIndex();
+  document.getElementById('nt').textContent = e.title;
+  document.getElementById('nc').textContent = e.chapters[j] ? `第 ${j + 1} 章 · ${e.chapters[j].title}` : '';
+  document.querySelectorAll('.chs div').forEach(d => d.classList.toggle('on', +d.dataset.j === j));
+}
+function load(k, t, play) {
+  if (k < 0 || k >= eps.length) return;
+  cur = k; st.id = eps[k].id; st.t = t || 0; save();
+  au.src = eps[k].url;
+  au.addEventListener('loadedmetadata', () => { au.currentTime = st.t; if (play) au.play(); }, { once: true });
+  if ('mediaSession' in navigator) {
+    navigator.mediaSession.metadata = new MediaMetadata({ title: eps[k].title, artist: '我的无限电台' });
+  }
+  render();
+}
+function seekCh(d) {
+  const ch = eps[cur].chapters, j = chIndex() + d;
+  if (j >= ch.length) return nextEp();
+  au.currentTime = ch[Math.max(0, j)].startTime;
+}
+function nextEp() {
+  const e = eps[cur]; if (e && !st.done.includes(e.id)) st.done.push(e.id);
+  load(cur + 1, 0, true);
+}
+au.ontimeupdate = () => { st.t = au.currentTime; if (Math.floor(au.currentTime) % 5 === 0) save(); updateNow(); };
+au.onended = nextEp;
+document.getElementById('back').onclick = () => au.currentTime -= 15;
+document.getElementById('fwd').onclick = () => au.currentTime += 30;
+document.getElementById('prevCh').onclick = () => seekCh(-1);
+document.getElementById('nextCh').onclick = () => seekCh(1);
+document.getElementById('nextEp').onclick = nextEp;
+if ('mediaSession' in navigator) {
+  navigator.mediaSession.setActionHandler('nexttrack', () => seekCh(1));
+  navigator.mediaSession.setActionHandler('previoustrack', () => seekCh(-1));
+}
+fetch('episodes.json', { cache: 'no-store' }).then(r => r.json()).then(list => {
+  eps = list.sort((a, b) => a.seq - b.seq);
+  if (!eps.length) { document.getElementById('nt').textContent = '还没有内容，等第一集生成。'; return; }
+  let k = eps.findIndex(e => e.id === st.id);
+  if (k < 0) k = Math.max(0, eps.findIndex(e => !st.done.includes(e.id)));
+  load(k, k >= 0 && eps[k].id === st.id ? st.t : 0, false);
+});
+</script>
+</body>
+</html>

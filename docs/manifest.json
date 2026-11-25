@@ -1,0 +1,1 @@
+{"name": "我的无限电台", "short_name": "无限电台", "start_url": "./", "display": "standalone", "background_color": "#ffffff", "theme_color": "#d97757", "icons": [{"src": "cover.png", "sizes": "1400x1400", "type": "image/png"}]}
