@@ -29,9 +29,12 @@ BUILD = ROOT / "build"
 EPISODES_DIR = ROOT / "episodes"
 INDEX_FILE = DOCS / "episodes.json"
 RATE = 24000
-LINE_GAP = 0.3       # 换人说话前的停顿
-SAME_SPK_GAP = 0.15  # 同一个人连续两句之间
-CHAPTER_GAP = 1.0
+LINE_GAP = 0.3       # 换人说话前的停顿（每句的首尾静音已裁掉，这就是实际停顿）
+SAME_SPK_GAP = 0.3   # 同一个人连续两句、且被拆开合成时
+CHAPTER_GAP = 1.2
+# 裁掉 edge-tts 每段自带的首尾静音，停顿才能精确控制（抢话、思考停顿才有效果）
+TRIM = ("silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.04,areverse,"
+        "silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.08,areverse")
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{2,80}$")
 
 
@@ -52,13 +55,13 @@ def write_silence(path, seconds):
         w.writeframes(b"\x00\x00" * int(RATE * seconds))
 
 
-async def tts_edge(text, voice, rate, out_mp3):
+async def tts_edge(text, voice, rate, pitch, out_mp3):
     import edge_tts
 
     last = None
     for attempt in range(4):
         try:
-            await edge_tts.Communicate(text, voice, rate=rate).save(str(out_mp3))
+            await edge_tts.Communicate(text, voice, rate=rate, pitch=pitch).save(str(out_mp3))
             if out_mp3.stat().st_size > 0:
                 return
         except Exception as e:  # 网络抖动或限流，退避重试
@@ -71,24 +74,56 @@ async def synth_line(i, line, voices, tmp, backend, sem):
     spk = voices.get(line["speaker"]) or next(iter(voices.values()))
     wav = tmp / f"l{i:05d}.wav"
     if backend == "dummy":
-        write_silence(wav, max(0.6, len(line["text"]) / 4.5))  # 约 270 字/分钟
+        write_silence(wav, max(0.6, len(line["text"]) / 4.2))  # 约 4.2 字/秒
         return wav
     mp3 = tmp / f"l{i:05d}.mp3"
     async with sem:
-        await tts_edge(line["text"], spk["voice"], line.get("rate") or spk.get("rate", "+0%"), mp3)
-    run(["ffmpeg", "-y", "-i", str(mp3), "-ac", "1", "-ar", str(RATE), str(wav)])
+        await tts_edge(line["text"], spk["voice"], line.get("rate") or spk.get("rate", "+0%"),
+                       line.get("pitch") or spk.get("pitch", "+0Hz"), mp3)
+    run(["ffmpeg", "-y", "-i", str(mp3), "-af", TRIM, "-ac", "1", "-ar", str(RATE), str(wav)])
     return wav
+
+
+def merge_turns(ep):
+    """同一个人连续说的几句，没有单独指定停顿和语速的，合成一次。
+    edge-tts 一次读完一整段，句间语调是连贯的；逐句合成每句都像重新起调，听着像念稿。"""
+    flat = []
+    for ci, ch in enumerate(ep["chapters"]):
+        for line in ch["lines"]:
+            text = line.get("text", "").strip()
+            if not text:
+                continue
+            prev = flat[-1] if flat else None
+            if (prev and prev[0] == ci and prev[1]["speaker"] == line["speaker"]
+                    and "gap" not in line and "rate" not in line and "pitch" not in line
+                    and "rate" not in prev[1] and "pitch" not in prev[1]
+                    and len(prev[1]["text"]) + len(text) <= 150):
+                prev[1]["text"] += text
+            else:
+                flat.append((ci, dict(line, text=text)))
+    return flat
+
+
+def lint(ep):
+    """朗读稿里容易读错的地方（只提醒，不拦）"""
+    out = []
+    for ch in ep["chapters"]:
+        for line in ch["lines"]:
+            t = line.get("text", "")
+            for m in re.findall(r"(?<![A-Za-z])\d[\d.,%]*", t):
+                out.append(f"阿拉伯数字「{m}」：{t[:20]}")
+            for m in re.findall(r"(?<![A-Za-z])[A-Za-z](?![A-Za-z0-9-])", t):
+                out.append(f"单个字母「{m}」：{t[:20]}")
+            if len(t) > 80:
+                out.append(f"句子太长（{len(t)} 字）：{t[:20]}")
+    return out
 
 
 async def render_episode(ep, backend):
     voices = CONFIG["voices"]
     tmp = Path(tempfile.mkdtemp(prefix="ep-"))
     try:
-        flat = []
-        for ci, ch in enumerate(ep["chapters"]):
-            for line in ch["lines"]:
-                if line.get("text", "").strip():
-                    flat.append((ci, line))
+        flat = merge_turns(ep)
         sem = asyncio.Semaphore(4)
         wavs = await asyncio.gather(*[
             synth_line(i, line, voices, tmp, backend, sem) for i, (_, line) in enumerate(flat)
@@ -246,6 +281,8 @@ def main():
         print("没有待渲染的集。")
     for ep in todo:
         print(f"渲染 {ep['id']} …", flush=True)
+        for w in lint(ep):
+            print("  提醒：" + w)
         mp3, total, chapters = asyncio.run(render_episode(ep, args.tts))
         (DOCS / "chapters").mkdir(parents=True, exist_ok=True)
         (DOCS / "chapters" / f"{ep['id']}.json").write_text(

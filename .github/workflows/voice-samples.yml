@@ -14,7 +14,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: pip install -q edge-tts
+      - run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          pip install -q edge-tts mutagen
       - name: 生成试听
         env:
           GH_TOKEN: ${{ github.token }}
@@ -25,6 +27,7 @@ jobs:
           for v in $(awk '/^zh-/ && /Female/ {print $1}' out/voices.txt) zh-CN-YunjianNeural zh-CN-YunxiNeural zh-CN-YunyangNeural; do
             edge-tts --voice "$v" --rate=+5% --text "$TEXT" --write-media "out/$v.mp3" || echo "失败 $v"
           done
+          python samples/compare.py
           ls -la out
           gh release delete voice-samples --yes --cleanup-tag 2>/dev/null || true
           gh release create voice-samples out/* --title "音色试听" --notes "中文音色试听样本" --prerelease
