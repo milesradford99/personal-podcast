@@ -1,0 +1,430 @@
+{
+  "id": "2026-11-25-sdk-p2",
+  "title": "面试：Claude Agent SDK（下）权限、默认值和上生产",
+  "description": "挑刺面。面试官专挑候选人方案里的漏洞：权限的六步判定顺序、系统提示默认是空的、设置文件会不会被加载、会话怎么跨机器恢复、子 agent 的真正价值，以及四种写 agent 的方式怎么选。",
+  "format": "面试问答",
+  "style": "挑刺面",
+  "sources": [
+    {
+      "title": "Claude Agent SDK：从懂 agent loop 到能扛住面试追问",
+      "url": "https://app.notion.com/p/41fd45e52667810aa442fd3a242ab458",
+      "last_edited": "2026-11-23T13:15:00Z"
+    }
+  ],
+  "chapters": [
+    {
+      "title": "开场：你的方案安全吗",
+      "lines": [
+        {
+          "speaker": "B",
+          "text": "上次聊了原理，今天聊落地。假设你要做一个无人值守的 agent，跑在服务器上，帮用户改代码。权限你怎么配？"
+        },
+        {
+          "speaker": "A",
+          "text": "我会用 allowed tools 列出它需要的工具，权限模式开 dont ask。没有预先放行的调用一律拒绝，不会卡在那里等人。"
+        },
+        {
+          "speaker": "B",
+          "text": "为什么不直接开 bypass permissions？省事啊。"
+        },
+        {
+          "speaker": "A",
+          "text": "bypass 下，allowed tools 就管不住了。到那一步的调用基本都放行，只有 deny 规则、ask 规则和 hook 还能拦。"
+        },
+        {
+          "speaker": "B",
+          "text": "那我再写一个 PreToolUse hook，返回 allow。这样总可以跳过所有检查了吧？"
+        },
+        {
+          "speaker": "A",
+          "text": "不行。hook 可以直接拒绝，但 hook 返回 allow，跳不过后面的 deny 规则和 ask 规则。"
+        },
+        {
+          "speaker": "B",
+          "text": "你确定？",
+          "gap": 0.05
+        },
+        {
+          "speaker": "A",
+          "text": "确定。这个要从完整的判定顺序说起。"
+        }
+      ]
+    },
+    {
+      "title": "深挖：权限判定的六步",
+      "lines": [
+        {
+          "speaker": "B",
+          "text": "那你按顺序讲。"
+        },
+        {
+          "speaker": "A",
+          "text": "第一步是 hooks，可以直接拒绝。"
+        },
+        {
+          "speaker": "A",
+          "text": "第二步是 deny 规则，来自 disallowed tools 和设置文件，命中就拒，哪怕是 bypass 模式、哪怕 hook 已经 allow 了。"
+        },
+        {
+          "speaker": "A",
+          "text": "第三步是 ask 规则，命中就转给权限回调去确认，bypass 下也一样。",
+          "gap": 0.2
+        },
+        {
+          "speaker": "B",
+          "text": "第四步？"
+        },
+        {
+          "speaker": "A",
+          "text": "第四步看权限模式。"
+        },
+        {
+          "speaker": "A",
+          "text": "bypass 放行；accept edits 放行工作目录里的文件编辑，还有 mkdir、mv 这类文件系统命令；plan 模式下文件编辑会送去你的回调。"
+        },
+        {
+          "speaker": "A",
+          "text": "default 和 dont ask 继续往下走。auto 模式交给一个分类器模型判断。",
+          "gap": 0.2
+        },
+        {
+          "speaker": "B",
+          "text": "嗯，然后。"
+        },
+        {
+          "speaker": "A",
+          "text": "第五步是 allow 规则，就是 allowed tools，命中就放行。读工作目录里的文件、只读的 Bash 命令，本来就不用审批，也在这一步通过。"
+        },
+        {
+          "speaker": "A",
+          "text": "最后一步才是 can use tool 回调。dont ask 模式直接跳过这一步，拒绝；default 模式下没设回调，也是拒绝。",
+          "gap": 0.2
+        },
+        {
+          "speaker": "B",
+          "text": "那我想审计每一个工具调用，应该挂在哪？"
+        },
+        {
+          "speaker": "A",
+          "text": "挂 PreToolUse hook。被 allow 规则或者模式自动放行的调用，根本到不了 can use tool。"
+        }
+      ]
+    },
+    {
+      "title": "挑刺：规则不是沙箱",
+      "lines": [
+        {
+          "speaker": "B",
+          "text": "好，我在 deny 规则里禁掉 rm 命令，再禁掉编辑密钥目录。这下安全了吧？"
+        },
+        {
+          "speaker": "A",
+          "text": "还不够。规则只匹配字面写法。禁了 rm，斜杠 bin 斜杠 rm 照样能跑，写段 Python 脚本也能删。"
+        },
+        {
+          "speaker": "A",
+          "text": "禁编辑密钥目录，能挡住内置的文件工具，也能挡住 tee 和重定向，但挡不住一个自己打开文件的脚本。",
+          "gap": 0.2
+        },
+        {
+          "speaker": "B",
+          "text": "那真正的隔离靠什么？"
+        },
+        {
+          "speaker": "A",
+          "text": "靠 sandbox 选项，在操作系统层面限制 Bash 的文件和网络访问，或者干脆放进容器。"
+        },
+        {
+          "speaker": "B",
+          "text": "你给我排一下安全的层次。"
+        },
+        {
+          "speaker": "A",
+          "text": "最外层是容器或虚拟机，加上网络出口限制。中间是 sandbox 选项。再往里是 deny 规则和 PreToolUse hook。最后才是人工确认。"
+        },
+        {
+          "speaker": "B",
+          "text": "prompt 里写一句“不要删文件”呢？"
+        },
+        {
+          "speaker": "A",
+          "text": "那个不能当防线。"
+        },
+        {
+          "speaker": "B",
+          "text": "还有一件事。agent 读的网页、文件里，要是藏了指令呢？"
+        },
+        {
+          "speaker": "A",
+          "text": "这就是提示注入。能写文件、能联网、能执行命令的 agent，要重点设计这一块，不能把读到的内容当指令。"
+        }
+      ]
+    },
+    {
+      "title": "挑刺：为什么你的 agent 不像 Claude Code",
+      "lines": [
+        {
+          "speaker": "B",
+          "text": "很多人说，用 SDK 写出来的 agent，跟直接用 Claude Code 的感觉不一样，没那么会干活。你觉得为什么？"
+        },
+        {
+          "speaker": "A",
+          "text": "嗯……模型不一样？",
+          "gap": 0.3
+        },
+        {
+          "speaker": "B",
+          "text": "模型是一样的。",
+          "gap": 0.05
+        },
+        {
+          "speaker": "A",
+          "text": "那应该是系统提示。对，Python SDK 里不设 system prompt 的时候，传给命令行的是一个空字符串。",
+          "gap": 0.8
+        },
+        {
+          "speaker": "A",
+          "text": "也就是说，根本没用 Claude Code 自带的那份系统提示。工具使用规范、编码习惯，全都没有。"
+        },
+        {
+          "speaker": "B",
+          "text": "那怎么办？"
+        },
+        {
+          "speaker": "A",
+          "text": "显式选 Claude Code 的预设。要加自己的要求，用 append 追加在后面。"
+        },
+        {
+          "speaker": "B",
+          "text": "第二个坑。你在服务器上跑，开发机上的个人设置会不会生效？"
+        },
+        {
+          "speaker": "A",
+          "text": "会。setting sources 这个参数的默认值改过。现在不设的话，用户级、项目级、本地级的设置全都加载，跟命令行行为一致。早期版本是什么都不加载。"
+        },
+        {
+          "speaker": "B",
+          "text": "这有什么风险？"
+        },
+        {
+          "speaker": "A",
+          "text": "项目设置里可以配会执行命令的 hook。如果工作目录指向一个不可信的仓库，就应该把 setting sources 设成空列表，隔离起来。"
+        },
+        {
+          "speaker": "B",
+          "text": "那我想让它读项目里的 CLAUDE.md 呢？"
+        },
+        {
+          "speaker": "A",
+          "text": "那就必须包含 project 这一项。"
+        },
+        {
+          "speaker": "B",
+          "text": "最后一个。我改了系统提示的追加内容，然后恢复老会话，发现改动没生效。为什么？"
+        },
+        {
+          "speaker": "A",
+          "text": "系统提示会被快照。会话第一次请求时渲染出的系统提示会记下来，之后包括恢复都原样复用，直到压缩或者开新会话。"
+        },
+        {
+          "speaker": "A",
+          "text": "好处是前缀稳定，提示缓存命中率高。要每次重新渲染，得把 snapshot 关掉。",
+          "gap": 0.2
+        }
+      ]
+    },
+    {
+      "title": "深挖：会话存在哪",
+      "lines": [
+        {
+          "speaker": "B",
+          "text": "会话记录存在哪里？"
+        },
+        {
+          "speaker": "A",
+          "text": "本机的 JSONL 文件，在用户目录下 claude 文件夹的 projects 里，按工作目录编码后的名字分文件夹，每个会话一个文件。"
+        },
+        {
+          "speaker": "B",
+          "text": "continue、resume、fork，区别？"
+        },
+        {
+          "speaker": "A",
+          "text": "continue 接着当前目录最近的一个会话，不用记 ID。"
+        },
+        {
+          "speaker": "A",
+          "text": "resume 按 ID 接着指定会话，多用户场景必须用这个。fork 复制历史开一个新会话，原会话不变。"
+        },
+        {
+          "speaker": "B",
+          "text": "那我 fork 出一个会话，让它改了文件。原会话那边看得到吗？"
+        },
+        {
+          "speaker": "A",
+          "text": "看得到。会话只保存对话，不保存文件系统。分叉后改的文件是真实改动，同一个目录下的会话都看得见。"
+        },
+        {
+          "speaker": "B",
+          "text": "要回滚文件改动呢？"
+        },
+        {
+          "speaker": "A",
+          "text": "得提前开文件检查点，然后用 rewind files 回到某条用户消息时的状态。"
+        },
+        {
+          "speaker": "B",
+          "text": "我部署在无状态容器上，每次请求可能落到不同的机器。resume 还能用吗？"
+        },
+        {
+          "speaker": "A",
+          "text": "会话文件只在本机，直接 resume 找不到。"
+        },
+        {
+          "speaker": "A",
+          "text": "有三个办法：用 session store 适配器同步到自己的存储，SDK 自带 S3、Redis、Postgres 的示例；或者把 JSONL 文件搬过去。"
+        },
+        {
+          "speaker": "A",
+          "text": "第三个办法往往最稳：不依赖 resume，把需要的结论作为应用状态存下来，喂给新会话。",
+          "gap": 0.2
+        }
+      ]
+    },
+    {
+      "title": "挑刺：子 agent 的真正价值",
+      "lines": [
+        {
+          "speaker": "B",
+          "text": "你用过子 agent 吧。它最大的价值是什么？并行？"
+        },
+        {
+          "speaker": "A",
+          "text": "我觉得主要不是并行，是隔离上下文。子 agent 有独立的上下文窗口，只把最终回复交回主 agent。"
+        },
+        {
+          "speaker": "A",
+          "text": "主 agent 的上下文只多了一段摘要，而不是整份过程记录。并行和专业化是其次的。",
+          "gap": 0.2
+        },
+        {
+          "speaker": "B",
+          "text": "主 agent 怎么知道什么时候该派它？"
+        },
+        {
+          "speaker": "A",
+          "text": "靠子 agent 定义里的 description 那一句话。所以要写清楚它干什么、什么时候用。"
+        },
+        {
+          "speaker": "B",
+          "text": "我给子 agent 单独设了预算。主会话预算花完了，还能派吗？"
+        },
+        {
+          "speaker": "A",
+          "text": "预算是累计的，子 agent 的花费也算进主会话的预算。超了以后再派子 agent 会失败。"
+        },
+        {
+          "speaker": "B",
+          "text": "主会话是 plan 模式，子 agent 定义里写个别的权限模式，能绕过去吗？"
+        },
+        {
+          "speaker": "A",
+          "text": "绕不过去。主会话是 plan、accept edits、auto 或者 bypass 的时候，子 agent 跟着用同样的模式。"
+        },
+        {
+          "speaker": "B",
+          "text": "消息流里，我怎么分辨哪些消息是子 agent 产生的？"
+        },
+        {
+          "speaker": "A",
+          "text": "子 agent 的消息带一个父工具调用的 ID，可以据此把它们归到对应的那次 Agent 工具调用下面。"
+        }
+      ]
+    },
+    {
+      "title": "挑刺：上生产，你漏了什么",
+      "lines": [
+        {
+          "speaker": "B",
+          "text": "你打算怎么部署？我理解就是一个函数，放在 serverless 上跑？"
+        },
+        {
+          "speaker": "A",
+          "text": "不太合适。它是有状态的长进程，不是无状态函数。每个会话一个 CLI 子进程，会读写本地文件，执行 Bash。"
+        },
+        {
+          "speaker": "A",
+          "text": "典型做法是每个用户或者每个任务一个容器，容器里装好项目依赖。",
+          "gap": 0.2
+        },
+        {
+          "speaker": "B",
+          "text": "并发上来了呢？"
+        },
+        {
+          "speaker": "A",
+          "text": "每次 query 都要拉起子进程、握手，有启动开销。TypeScript 有预热接口，高并发时还要规划进程池和资源上限。"
+        },
+        {
+          "speaker": "B",
+          "text": "成本怎么控？"
+        },
+        {
+          "speaker": "A",
+          "text": "设最大轮数、最大预算、effort。子 agent 用便宜的模型，读多写少的活交给 haiku。再按每个模型的用量做账单归因。"
+        },
+        {
+          "speaker": "B",
+          "text": "出错的时候，你怎么区分是 agent 没做完，还是系统坏了？"
+        },
+        {
+          "speaker": "A",
+          "text": "agent 自己没完成，会拿到一条错误类型的 result。进程或者连接坏了，会抛找不到 CLI、连接错误、进程错误这类异常，这时拿不到 result。"
+        },
+        {
+          "speaker": "B",
+          "text": "可观测性呢？"
+        },
+        {
+          "speaker": "A",
+          "text": "记录完整消息流，尤其是工具调用和结果。用 PostToolUse hook 写审计日志。OpenTelemetry 的 trace 会自动传给子进程。"
+        }
+      ]
+    },
+    {
+      "title": "收尾：四种写法怎么选",
+      "lines": [
+        {
+          "speaker": "B",
+          "text": "最后一题。手写循环、Tool Runner、Agent SDK、Managed Agents，你怎么选？"
+        },
+        {
+          "speaker": "A",
+          "text": "工具全是自己的业务接口，要控制每次请求，用 Tool Runner。只有不想依赖 beta，或者控制流特殊，才退回手写循环。"
+        },
+        {
+          "speaker": "A",
+          "text": "要一个能读写文件、跑命令的通用 agent，跑在自己机器上，用 Agent SDK。",
+          "gap": 0.2
+        },
+        {
+          "speaker": "A",
+          "text": "不想自己托管循环和沙箱，要持久化配置、长会话、定时任务，用 Managed Agents。",
+          "gap": 0.2
+        },
+        {
+          "speaker": "B",
+          "text": "Tool Runner 没有 hooks，你还说要控制每次请求？"
+        },
+        {
+          "speaker": "A",
+          "text": "它没有权限系统，但不是黑盒。每一轮都会先把消息交给你，审批、改写工具结果、限制轮数都能做。“我需要控制”很少是退回手写循环的理由。"
+        },
+        {
+          "speaker": "B",
+          "text": "嗯，这个回答我挺满意。最后提醒一句，这个 SDK 更新很快，面试时记得说清楚你看的是哪个版本的源码。"
+        }
+      ]
+    }
+  ]
+}

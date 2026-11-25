@@ -1,0 +1,466 @@
+{
+  "id": "2026-11-25-sdk-p1",
+  "title": "面试：Claude Agent SDK（上）loop 到底跑在哪",
+  "description": "源码深挖面。从“它和直接调 API 有什么区别”问起，一路追到子进程架构、双向控制协议、hook 怎么跨进程调用、消息流的坑，以及三个工具参数的区别。",
+  "format": "面试问答",
+  "style": "源码深挖面",
+  "sources": [
+    {
+      "title": "Claude Agent SDK：从懂 agent loop 到能扛住面试追问",
+      "url": "https://app.notion.com/p/41fd45e52667810aa442fd3a242ab458",
+      "last_edited": "2026-11-23T13:15:00Z"
+    }
+  ],
+  "chapters": [
+    {
+      "title": "开场：它和直接调 API 有什么区别",
+      "lines": [
+        {
+          "speaker": "B",
+          "text": "你简历上写了用过 Claude Agent SDK。先说说，它和直接调 Messages API 有什么区别？"
+        },
+        {
+          "speaker": "A",
+          "text": "一句话，它是把 Claude Code 当成一个库来用。我调一个 query，传 prompt 和配置，它就把整个 agent 跑完。"
+        },
+        {
+          "speaker": "B",
+          "text": "跑完是什么意思？谁在跑？"
+        },
+        {
+          "speaker": "A",
+          "text": "调模型、执行工具、管上下文、做权限检查、写会话记录，这些都不用我写。我的代码只负责配置，然后接收它吐出来的消息流。"
+        },
+        {
+          "speaker": "B",
+          "text": "那 anthropic 包里的 Tool Runner 呢？名字挺像的。"
+        },
+        {
+          "speaker": "A",
+          "text": "呃，这两个容易混。Tool Runner 只是帮你循环调用自定义工具的小助手，没有内置工具，也不碰文件系统。"
+        },
+        {
+          "speaker": "A",
+          "text": "Agent SDK 是一整套 harness，循环、上下文管理、权限、hooks、会话、子 agent 全都有。",
+          "gap": 0.2
+        },
+        {
+          "speaker": "B",
+          "text": "Anthropic 自己怎么给这几种方式分类的？"
+        },
+        {
+          "speaker": "A",
+          "text": "按两个维度：谁写 loop，谁托管运行环境。手写循环，loop 是你写的。Tool Runner，循环交给 SDK，但工具全是你自己的。"
+        },
+        {
+          "speaker": "A",
+          "text": "Agent SDK，loop 跑在 Claude Code 进程里，但进程托管在你自己的机器上。",
+          "gap": 0.2
+        },
+        {
+          "speaker": "A",
+          "text": "Managed Agents 最彻底，loop 和沙箱都是 Anthropic 托管。"
+        },
+        {
+          "speaker": "B",
+          "text": "嗯。它以前不叫这个名字吧？"
+        },
+        {
+          "speaker": "A",
+          "text": "以前叫 Claude Code SDK。后来改名，因为它能做的远不止写代码。"
+        }
+      ]
+    },
+    {
+      "title": "深挖：loop 不在 SDK 里",
+      "lines": [
+        {
+          "speaker": "B",
+          "text": "你说 loop 跑在 Claude Code 进程里。那 SDK 自己的代码里，有没有 agent loop？"
+        },
+        {
+          "speaker": "A",
+          "text": "没有。这是我读源码之后最意外的一点。"
+        },
+        {
+          "speaker": "A",
+          "text": "agent loop 在 Claude Code 那个二进制里，Python 和 TypeScript 两个 SDK 都只是很薄的一层。"
+        },
+        {
+          "speaker": "B",
+          "text": "薄到什么程度？"
+        },
+        {
+          "speaker": "A",
+          "text": "就干三件事：启动子进程，通过标准输入输出收发 JSON，再把你的回调函数接到进程上。可以把它理解成一个子进程遥控器。"
+        },
+        {
+          "speaker": "B",
+          "text": "那 Claude Code 的二进制从哪来？我还得单独装吗？"
+        },
+        {
+          "speaker": "A",
+          "text": "一般不用。Python 包里自带一个捆绑的二进制，TypeScript 是按平台装一个可选依赖。找不到才去 PATH 和几个常见安装位置找，也可以自己指定路径。"
+        },
+        {
+          "speaker": "B",
+          "text": "好，那你给我讲讲，启动的时候按顺序发生了什么。"
+        },
+        {
+          "speaker": "A",
+          "text": "先找到 CLI，然后拼命令行。固定会带上 stream json 格式的输入和输出，你的配置大多变成命令行参数，比如模型、允许的工具、最大轮数、权限模式。"
+        },
+        {
+          "speaker": "A",
+          "text": "然后设环境变量。继承你的环境，但会去掉 CLAUDECODE 这个变量——",
+          "rate": "+8%"
+        },
+        {
+          "speaker": "B",
+          "text": "为什么要去掉？",
+          "gap": 0.05
+        },
+        {
+          "speaker": "A",
+          "text": "防止子进程以为自己嵌套在另一个 Claude Code 里面。"
+        },
+        {
+          "speaker": "A",
+          "text": "另外如果你有 OpenTelemetry 的活动 span，它会把 trace 上下文传进去，子进程的 span 能挂到你的 trace 下面。"
+        },
+        {
+          "speaker": "B",
+          "text": "接着呢？"
+        },
+        {
+          "speaker": "A",
+          "text": "接着发一条 initialize 控制请求，再把用户消息写进标准输入，最后逐行读输出，把消息解析成各种类型交给你。"
+        }
+      ]
+    },
+    {
+      "title": "追问：为什么 hooks 不走命令行",
+      "lines": [
+        {
+          "speaker": "B",
+          "text": "你刚才说配置大多变成命令行参数。那 hooks、子 agent 的定义，也是命令行参数吗？"
+        },
+        {
+          "speaker": "A",
+          "text": "嗯……我想一下。",
+          "gap": 0.2
+        },
+        {
+          "speaker": "A",
+          "text": "不是。这些走的是那条 initialize 请求。",
+          "gap": 0.7
+        },
+        {
+          "speaker": "B",
+          "text": "为什么？"
+        },
+        {
+          "speaker": "A",
+          "text": "两个原因。一是这些配置可能很大。二是 hook 本身是一个函数，函数没法塞进命令行。"
+        },
+        {
+          "speaker": "B",
+          "text": "函数也没法通过 JSON 发过去啊。那 CLI 怎么调用你的 hook？"
+        },
+        {
+          "speaker": "A",
+          "text": "SDK 在本地给每个 hook 函数编一个号，存一张从编号到函数的表，只把编号和匹配规则发给 CLI。"
+        },
+        {
+          "speaker": "A",
+          "text": "CLI 到了触发点，就发一条 hook callback 请求回来，带上编号。SDK 查表调用函数，再把返回值写回去。",
+          "gap": 0.2
+        },
+        {
+          "speaker": "B",
+          "text": "所以函数从头到尾没离开过你的进程。"
+        },
+        {
+          "speaker": "A",
+          "text": "对。面试时能说出“initialize 里带的是回调编号，不是函数本身”，比背 API 有说服力。"
+        },
+        {
+          "speaker": "B",
+          "text": "还有个细节。如果我只传一个字符串 prompt，它是不是就不用流式了？"
+        },
+        {
+          "speaker": "A",
+          "text": "也是流式。源码注释写得很直白，内部一律用流式输入模式，跟 TypeScript 保持一致。不然 initialize 发不出去。"
+        }
+      ]
+    },
+    {
+      "title": "深挖：双向控制协议",
+      "lines": [
+        {
+          "speaker": "B",
+          "text": "你说 CLI 会反过来发请求给 SDK。那标准输入输出上，跑的不只是对话消息？"
+        },
+        {
+          "speaker": "A",
+          "text": "对，还有一套带 request id 的控制协议，请求和响应一一对应。关键是两个方向都有请求。"
+        },
+        {
+          "speaker": "B",
+          "text": "SDK 发给 CLI 的有哪些？"
+        },
+        {
+          "speaker": "A",
+          "text": "initialize 注册 hooks 和子 agent。interrupt 打断当前这一轮。"
+        },
+        {
+          "speaker": "A",
+          "text": "还有中途切权限模式、切模型，回滚文件，查 MCP 状态，查上下文占用。"
+        },
+        {
+          "speaker": "B",
+          "text": "反过来呢？"
+        },
+        {
+          "speaker": "A",
+          "text": "CLI 发给 SDK 的主要是三种。问权限回调，这个工具能不能用；触发某个 hook；还有把 MCP 消息转给你进程里的 MCP server。"
+        },
+        {
+          "speaker": "B",
+          "text": "等一下，进程里的 MCP server？MCP server 不是一个独立进程吗？"
+        },
+        {
+          "speaker": "A",
+          "text": "用 create sdk mcp server 建的不是。"
+        },
+        {
+          "speaker": "A",
+          "text": "CLI 把它当普通 MCP server 对待，但消息不走网络，也不走子进程，而是装在控制请求里发给 SDK。"
+        },
+        {
+          "speaker": "A",
+          "text": "SDK 用内存流把消息交给一个真正的 MCP server 处理。",
+          "gap": 0.15
+        },
+        {
+          "speaker": "B",
+          "text": "好。那这里有个坑你知道吗？标准输入什么时候关？"
+        },
+        {
+          "speaker": "A",
+          "text": "呃……发完用户消息就关？",
+          "gap": 0.6
+        },
+        {
+          "speaker": "B",
+          "text": "你再想想。CLI 中途要问你权限呢？",
+          "gap": 0.1
+        },
+        {
+          "speaker": "A",
+          "text": "啊，对。如果配了 hooks、权限回调，或者进程内的 MCP server，SDK 会一直开着标准输入，直到整轮跑完才关。"
+        },
+        {
+          "speaker": "A",
+          "text": "不然子进程反过来请求你的时候，会报 Stream closed。源码里有个专门的判断，就是看有没有双向通信的需要。",
+          "gap": 0.15
+        }
+      ]
+    },
+    {
+      "title": "追问：消息流里的坑",
+      "lines": [
+        {
+          "speaker": "B",
+          "text": "讲讲 loop 在 SDK 里的样子。一轮是怎么算的？"
+        },
+        {
+          "speaker": "A",
+          "text": "模型输出一次，带工具调用就执行，结果自动喂回去，这算一轮。中间不会把控制权交还给我的代码，直到模型不再调用工具。"
+        },
+        {
+          "speaker": "B",
+          "text": "消息的顺序呢？"
+        },
+        {
+          "speaker": "A",
+          "text": "先一条 system 消息，类型是 init，带会话 ID、可用工具、MCP 状态。"
+        },
+        {
+          "speaker": "A",
+          "text": "然后是若干 assistant 和 user 消息，工具结果是以 user 的角色喂回去的。最后一条 result。"
+        },
+        {
+          "speaker": "B",
+          "text": "result 什么时候有 result 字段？"
+        },
+        {
+          "speaker": "A",
+          "text": "只有 success 的时候有。超了最大轮数、超了预算、执行出错，都没有这个字段。但每种都带总花费和用量。"
+        },
+        {
+          "speaker": "B",
+          "text": "那出错的时候，我的代码会怎样？"
+        },
+        {
+          "speaker": "A",
+          "text": "单次 query 遇到错误类的 result，会先把这条 result 交给你，然后抛异常。所以要包 try，而且要在循环里先拿到会话 ID。"
+        },
+        {
+          "speaker": "B",
+          "text": "拿到 result 就可以 break 了吧？"
+        },
+        {
+          "speaker": "A",
+          "text": "最好不要。result 之后还可能来消息，比如提示建议这类事件。官方建议把流读完。"
+        },
+        {
+          "speaker": "B",
+          "text": "一轮里有好几个工具调用，是并发还是串行？"
+        },
+        {
+          "speaker": "A",
+          "text": "只读的可以并发，比如 Read、Glob、Grep。会改状态的，比如 Edit、Write、Bash，按顺序执行。"
+        },
+        {
+          "speaker": "B",
+          "text": "我自己写的工具呢？"
+        },
+        {
+          "speaker": "A",
+          "text": "自定义工具默认串行。要并发，得给它加上 read only hint 注解。"
+        }
+      ]
+    },
+    {
+      "title": "手撕：三个工具参数",
+      "lines": [
+        {
+          "speaker": "B",
+          "text": "tools、allowed tools、disallowed tools，三个参数，你分别说一下。"
+        },
+        {
+          "speaker": "A",
+          "text": "tools 管的是模型能看到哪些内置工具。传空列表，就是关掉所有内置工具。"
+        },
+        {
+          "speaker": "A",
+          "text": "allowed tools 是自动放行、不再询问的名单。没列出来的工具依然存在，只是调用的时候要走后面的权限流程。",
+          "gap": 0.2
+        },
+        {
+          "speaker": "B",
+          "text": "那 disallowed tools 呢？"
+        },
+        {
+          "speaker": "A",
+          "text": "是拒绝规则。写裸工具名，比如 Bash，会把工具定义直接从请求里删掉。写带模式的，比如 Bash 加上 rm 星号，只拒绝匹配的调用。"
+        },
+        {
+          "speaker": "B",
+          "text": "好，场景题。allowed tools 只写 Read，权限模式开 bypass permissions，让它删一个文件。会怎样？"
+        },
+        {
+          "speaker": "A",
+          "text": "allowed tools 只有 Read，所以……它删不掉？",
+          "gap": 0.3
+        },
+        {
+          "speaker": "B",
+          "text": "确定？",
+          "gap": 0.05
+        },
+        {
+          "speaker": "A",
+          "text": "不对，会删掉。allowed tools 管不住 bypass permissions。",
+          "gap": 0.8
+        },
+        {
+          "speaker": "A",
+          "text": "在 bypass 模式下，要禁止某些操作，只能靠 disallowed tools 或者 hook。"
+        },
+        {
+          "speaker": "B",
+          "text": "那我用 disallowed tools 拒掉 rm 开头的命令，就安全了？"
+        },
+        {
+          "speaker": "A",
+          "text": "也不是。模型可能改用斜杠 bin 斜杠 rm，或者写段 Python 去删。模式匹配只认字面写法，不是安全边界。"
+        },
+        {
+          "speaker": "B",
+          "text": "嗯，这个后面我们再细聊。"
+        }
+      ]
+    },
+    {
+      "title": "追问：hook 和权限回调",
+      "lines": [
+        {
+          "speaker": "B",
+          "text": "PreToolUse hook 和 can use tool 回调，都能拦工具调用。区别在哪？"
+        },
+        {
+          "speaker": "A",
+          "text": "触发时机不同。hook 是每个工具调用都会先经过它，包括已经被 allow 规则或者权限模式自动放行的。适合做强制策略和审计。"
+        },
+        {
+          "speaker": "A",
+          "text": "can use tool 只有前面所有步骤都没做出决定的调用，才会到这里。适合做弹窗，问用户同不同意。",
+          "gap": 0.2
+        },
+        {
+          "speaker": "B",
+          "text": "我把 Write 加进 allowed tools，又写了一个 can use tool 回调。写文件的时候，回调会被调用吗？"
+        },
+        {
+          "speaker": "A",
+          "text": "不会。Write 已经被自动放行了，到不了回调。Python SDK 还会专门发一条警告，告诉你这个回调对 Write 不会再被调用。"
+        },
+        {
+          "speaker": "B",
+          "text": "被拒绝的时候，模型看到的是什么？"
+        },
+        {
+          "speaker": "A",
+          "text": "一条拒绝消息，作为工具结果喂回去。模型一般会换个办法，或者如实报告做不了。"
+        },
+        {
+          "speaker": "B",
+          "text": "自定义工具执行失败了，你会怎么告诉模型？抛异常？"
+        },
+        {
+          "speaker": "A",
+          "text": "不抛异常，返回结果的时候把 is error 标成真。这样模型知道失败了，可以自己处理。"
+        }
+      ]
+    },
+    {
+      "title": "收尾：总结一下",
+      "lines": [
+        {
+          "speaker": "B",
+          "text": "时间差不多了。你总结一下今天聊的。"
+        },
+        {
+          "speaker": "A",
+          "text": "Agent SDK 是子进程遥控器，loop 在 Claude Code 二进制里，SDK 只管启动进程、收发 JSON、接回调。"
+        },
+        {
+          "speaker": "A",
+          "text": "标准输入输出上跑着一套双向控制协议。hooks 和子 agent 走 initialize，hook 跨进程靠回调编号查表。",
+          "gap": 0.2
+        },
+        {
+          "speaker": "A",
+          "text": "用的时候要分清 tools、allowed tools、disallowed tools，也要分清 hook 和权限回调谁先谁后。",
+          "gap": 0.2
+        },
+        {
+          "speaker": "B",
+          "text": "嗯，原理讲得还行。下一轮我问你权限的完整判定顺序，还有那几个默认值的坑。"
+        }
+      ]
+    }
+  ]
+}

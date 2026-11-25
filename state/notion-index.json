@@ -13,10 +13,30 @@
           "made_from_edit": "2026-11-25T02:43:29Z"
         }
       ]
+    },
+    "41fd45e52667810aa442fd3a242ab458": {
+      "title": "Claude Agent SDK：从懂 agent loop 到能扛住面试追问",
+      "category": "（知识库外，用户指定）",
+      "url": "https://app.notion.com/p/41fd45e52667810aa442fd3a242ab458",
+      "last_edited": "2026-11-23T13:15:00Z",
+      "episodes": [
+        {
+          "id": "2026-11-25-sdk-p1",
+          "format": "面试问答",
+          "style": "源码深挖面",
+          "made_from_edit": "2026-11-23T13:15:00Z"
+        },
+        {
+          "id": "2026-11-25-sdk-p2",
+          "format": "面试问答",
+          "style": "挑刺面",
+          "made_from_edit": "2026-11-23T13:15:00Z"
+        }
+      ]
     }
   },
   "rotation": {
-    "last_style": "标准技术面",
-    "last_category": "06-数据结构与算法"
+    "last_style": "挑刺面",
+    "last_category": "（知识库外，用户指定）"
   }
 }
