@@ -38,7 +38,7 @@ description: 把 Notion 技术知识库自动做成个人播客的新集并发�
 按 `per_run_minutes`（默认 60 分钟）挑出本次要做的集，按中文约 270 字一分钟估算时长。优先级：
 
 1. 新增的页面。
-2. 有更新的页面。修改较小的做 3 到 5 分钟的“更新要点”速听；改动大的按正常体裁重做一集。
+2. 有更新的页面。修改较小的做 3 到 5 分钟的“快问快答”，只讲更新要点；改动大的换一种面试风格重做一集。
 3. 体系内还没做过的页面。按分类轮转，不要连续两集都来自同一个分类；同一分类内按编号顺序。
 4. 以上全部做完时，停止，并告诉用户“知识库已全部制作完毕”。用户说过内容耗尽后的扩展暂时不做，不要自行联网补充内容，也不要重复制作。
 
@@ -114,7 +114,7 @@ description: 把 Notion 技术知识库自动做成个人播客的新集并发�
 ```json
 {
   "id": "2026-11-25-cache-eviction",
-  "title": "缓存满了该扔谁：从 LRU、LFU 到 S3-FIFO",
+  "title": "面试：缓存满了该扔谁？从 LRU 一路问到 S3-FIFO",
   "description": "一两句话的节目简介，出现在播客 App 里。",
   "format": "面试问答",
   "style": "标准技术面",
@@ -157,7 +157,7 @@ description: 把 Notion 技术知识库自动做成个人播客的新集并发�
 ### 7. 提交与汇报
 
 1. 用 `python3 -c "import json,sys;[json.load(open(p)) for p in sys.argv[1:]]" episodes/*/episode.json state/notion-index.json` 校验 JSON。
-2. 提交并推送：`git add episodes state && git commit -m "新增 N 集：<标题们>" && git push`。
+2. 提交并推送：`git add episodes state && git commit -m "新增 N 集：<标题们>" && git pull --rebase && git push`。
 3. 推送会触发 Actions 渲染。能用 `gh run watch` 就等它跑完，确认成功；失败时读 `gh run view --log-failed`，修好再推。
 4. 用一小段话向用户汇报：做了哪几集（标题、面试风格、预计时长），知识库还剩多少页没做，网页播放器地址（`site_url`）。
 
@@ -166,4 +166,5 @@ description: 把 Notion 技术知识库自动做成个人播客的新集并发�
 - “做 3 集”“做 2 小时”：覆盖 `per_run_minutes`。
 - “做某某笔记”“只做 Go 分类”：直接按指定选题，跳过优先级。
 - “换成系统设计面”：指定面试风格。
+- “换面试官的声音”：改 `podcast.json` 里 `voices.B.voice`，可选 `zh-CN-XiaoyiNeural`、`zh-TW-HsiaoChenNeural`、`zh-TW-HsiaoYuNeural`、`zh-CN-liaoning-XiaobeiNeural`、`zh-CN-shaanxi-XiaoniNeural`、`zh-CN-XiaoxiaoNeural`。只影响之后渲染的集。
 - “重做某一集”：改写对应的 `episode.json`，同时从 `docs/episodes.json` 删掉这一集的条目、删掉 `docs/chapters/<id>.json`，再提交。Actions 会用同一个 id 重新渲染并覆盖原音频。
