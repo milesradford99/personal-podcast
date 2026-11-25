@@ -159,11 +159,11 @@ description: 把 Notion 技术知识库自动做成个人播客的新集并发�
 1. 用 `python3 -c "import json,sys;[json.load(open(p)) for p in sys.argv[1:]]" episodes/*/episode.json state/notion-index.json` 校验 JSON。
 2. 提交并推送：`git add episodes state && git commit -m "新增 N 集：<标题们>" && git push`。
 3. 推送会触发 Actions 渲染。能用 `gh run watch` 就等它跑完，确认成功；失败时读 `gh run view --log-failed`，修好再推。
-4. 用一小段话向用户汇报：做了哪几集（标题、体裁、预计时长），知识库还剩多少页没做，网页播放器地址（`site_url`）。
+4. 用一小段话向用户汇报：做了哪几集（标题、面试风格、预计时长），知识库还剩多少页没做，网页播放器地址（`site_url`）。
 
 ## 用户可以临时指定
 
 - “做 3 集”“做 2 小时”：覆盖 `per_run_minutes`。
 - “做某某笔记”“只做 Go 分类”：直接按指定选题，跳过优先级。
 - “换成系统设计面”：指定面试风格。
-- “重做某一集”：改写对应的 `episode.json` 后提交；渲染脚本只在 id 不在 `docs/episodes.json` 时才渲染，所以重做时要换一个新 id，或让用户手动带 `--only` 运行工作流。
+- “重做某一集”：改写对应的 `episode.json`，同时从 `docs/episodes.json` 删掉这一集的条目、删掉 `docs/chapters/<id>.json`，再提交。Actions 会用同一个 id 重新渲染并覆盖原音频。
