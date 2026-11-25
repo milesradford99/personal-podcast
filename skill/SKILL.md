@@ -12,7 +12,7 @@ description: 把 Notion 技术知识库自动做成个人播客的新集并发�
 - 电台仓库（含 `podcast.json`、`tools/render.py`、`.github/workflows/publish.yml`）已克隆到当前工作目录，且你有推送权限。不在仓库里时，先问用户仓库地址并克隆。
 - Notion 连接器可用。**只读 Notion，绝不修改。**
 - 关键文件：
-  - `podcast.json`：配置。`notion_root` 是知识库根页面，`per_run_minutes` 是每次产出的目标时长，`voices.A` 是候选人，`voices.B` 是面试官，音色可以在这里换。
+  - `podcast.json`：配置。`notion_root` 是知识库根页面，`per_run_minutes` 是每次产出的目标时长，`voices.A` 是候选人（默认 Brian 多语言），`voices.B` 是面试官（默认 Vivienne 多语言），音色可以在这里换。
   - `state/notion-index.json`：你维护的状态，结构见下文。
   - `docs/episodes.json`：已发布的集，由 Actions 写入，你只读。
   - `episodes/<id>/episode.json`：每集脚本，由你新建。

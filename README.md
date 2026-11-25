@@ -5,7 +5,7 @@
 ## 怎么运作
 
 1. 你的 Claude 运行 `notion-podcast` 技能：扫描 Notion，挑选题、选体裁，把口播脚本写进 `episodes/<id>/episode.json`，提交推送。
-2. 推送触发 GitHub Actions：用 edge-tts（云健 + 晓伊）逐句合成，拼接、响度归一、写入章节，把 MP3 上传为 Release 附件。
+2. 推送触发 GitHub Actions：用 edge-tts（Brian + Vivienne 多语言音色）逐句合成，拼接、响度归一、写入章节，把 MP3 上传为 Release 附件。
 3. Actions 更新 `docs/feed.xml`（RSS）和 `docs/episodes.json`，GitHub Pages 对外提供：
    - 网页播放器：`https://<你的用户名>.github.io/<仓库名>/`，连续播放、跳章节、记住进度，可“添加到主屏幕”。
    - RSS：`https://<你的用户名>.github.io/<仓库名>/feed.xml`，可在 Apple Podcasts、Pocket Casts、AntennaPod 等 App 里按链接订阅。

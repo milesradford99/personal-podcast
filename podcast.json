@@ -16,10 +16,10 @@
       "pitch": "-3Hz"
     },
     "B": {
-      "name": "晓伊",
+      "name": "Vivienne",
       "role": "面试官",
-      "voice": "zh-CN-XiaoyiNeural",
-      "rate": "+0%",
+      "voice": "fr-FR-VivienneMultilingualNeural",
+      "rate": "+12%",
       "pitch": "-2Hz"
     }
   }
