@@ -1,0 +1,45 @@
+{
+  "version": "1.2.0",
+  "chapters": [
+    {
+      "title": "开场：它和直接调 API 有什么区别",
+      "startTime": 0.0,
+      "endTime": 87.78
+    },
+    {
+      "title": "深挖：loop 不在 SDK 里",
+      "startTime": 87.78,
+      "endTime": 187.25
+    },
+    {
+      "title": "追问：为什么 hooks 不走命令行",
+      "startTime": 187.25,
+      "endTime": 262.44
+    },
+    {
+      "title": "深挖：双向控制协议",
+      "startTime": 262.44,
+      "endTime": 361.62
+    },
+    {
+      "title": "追问：消息流里的坑",
+      "startTime": 361.62,
+      "endTime": 453.25
+    },
+    {
+      "title": "手撕：三个工具参数",
+      "startTime": 453.25,
+      "endTime": 530.44
+    },
+    {
+      "title": "追问：hook 和权限回调",
+      "startTime": 530.44,
+      "endTime": 599.29
+    },
+    {
+      "title": "收尾：总结一下",
+      "startTime": 599.29,
+      "endTime": 635.61
+    }
+  ]
+}

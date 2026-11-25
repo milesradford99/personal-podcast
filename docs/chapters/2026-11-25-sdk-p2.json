@@ -1,0 +1,45 @@
+{
+  "version": "1.2.0",
+  "chapters": [
+    {
+      "title": "开场：你的方案安全吗",
+      "startTime": 0.0,
+      "endTime": 52.0
+    },
+    {
+      "title": "深挖：权限判定的六步",
+      "startTime": 52.0,
+      "endTime": 125.42
+    },
+    {
+      "title": "挑刺：规则不是沙箱",
+      "startTime": 125.42,
+      "endTime": 194.55
+    },
+    {
+      "title": "挑刺：为什么你的 agent 不像 Claude Code",
+      "startTime": 194.55,
+      "endTime": 295.25
+    },
+    {
+      "title": "深挖：会话存在哪",
+      "startTime": 295.25,
+      "endTime": 376.55
+    },
+    {
+      "title": "挑刺：子 agent 的真正价值",
+      "startTime": 376.55,
+      "endTime": 448.53
+    },
+    {
+      "title": "挑刺：上生产，你漏了什么",
+      "startTime": 448.53,
+      "endTime": 525.63
+    },
+    {
+      "title": "收尾：四种写法怎么选",
+      "startTime": 525.63,
+      "endTime": 585.32
+    }
+  ]
+}

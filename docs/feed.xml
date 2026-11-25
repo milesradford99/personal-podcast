@@ -20,5 +20,27 @@
 <itunes:episodeType>full</itunes:episodeType>
 <podcast:chapters url="https://milesradford99.github.io/personal-podcast/chapters/2026-11-25-cache-eviction.json" type="application/json+chapters"/>
 </item>
+<item>
+<title>面试：Claude Agent SDK（上）loop 到底跑在哪</title>
+<description>源码深挖面。从“它和直接调 API 有什么区别”问起，一路追到子进程架构、双向控制协议、hook 怎么跨进程调用、消息流的坑，以及三个工具参数的区别。</description>
+<guid isPermaLink="false">2026-11-25-sdk-p1</guid>
+<pubDate>Wed, 25 Nov 2026 09:10:49 +0000</pubDate>
+<enclosure url="https://github.com/milesradford99/personal-podcast/releases/download/ep-2026-11-25-sdk-p1/2026-11-25-sdk-p1.mp3" length="5092207" type="audio/mpeg"/>
+<itunes:duration>00:10:35</itunes:duration>
+<itunes:episode>2</itunes:episode>
+<itunes:episodeType>full</itunes:episodeType>
+<podcast:chapters url="https://milesradford99.github.io/personal-podcast/chapters/2026-11-25-sdk-p1.json" type="application/json+chapters"/>
+</item>
+<item>
+<title>面试：Claude Agent SDK（下）权限、默认值和上生产</title>
+<description>挑刺面。面试官专挑候选人方案里的漏洞：权限的六步判定顺序、系统提示默认是空的、设置文件会不会被加载、会话怎么跨机器恢复、子 agent 的真正价值，以及四种写 agent 的方式怎么选。</description>
+<guid isPermaLink="false">2026-11-25-sdk-p2</guid>
+<pubDate>Wed, 25 Nov 2026 09:12:47 +0000</pubDate>
+<enclosure url="https://github.com/milesradford99/personal-podcast/releases/download/ep-2026-11-25-sdk-p2/2026-11-25-sdk-p2.mp3" length="4689546" type="audio/mpeg"/>
+<itunes:duration>00:09:45</itunes:duration>
+<itunes:episode>3</itunes:episode>
+<itunes:episodeType>full</itunes:episodeType>
+<podcast:chapters url="https://milesradford99.github.io/personal-podcast/chapters/2026-11-25-sdk-p2.json" type="application/json+chapters"/>
+</item>
 </channel>
 </rss>

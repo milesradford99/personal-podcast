@@ -58,5 +58,125 @@
       }
     ],
     "published_at": "2026-11-25T06:09:18+00:00"
+  },
+  {
+    "id": "2026-11-25-sdk-p1",
+    "seq": 2,
+    "title": "面试：Claude Agent SDK（上）loop 到底跑在哪",
+    "description": "源码深挖面。从“它和直接调 API 有什么区别”问起，一路追到子进程架构、双向控制协议、hook 怎么跨进程调用、消息流的坑，以及三个工具参数的区别。",
+    "format": "面试问答",
+    "sources": [
+      {
+        "title": "Claude Agent SDK：从懂 agent loop 到能扛住面试追问",
+        "url": "https://app.notion.com/p/41fd45e52667810aa442fd3a242ab458",
+        "last_edited": "2026-11-23T13:15:00Z"
+      }
+    ],
+    "url": "https://github.com/milesradford99/personal-podcast/releases/download/ep-2026-11-25-sdk-p1/2026-11-25-sdk-p1.mp3",
+    "bytes": 5092207,
+    "duration": 635.6,
+    "chapters": [
+      {
+        "title": "开场：它和直接调 API 有什么区别",
+        "startTime": 0.0,
+        "endTime": 87.78
+      },
+      {
+        "title": "深挖：loop 不在 SDK 里",
+        "startTime": 87.78,
+        "endTime": 187.25
+      },
+      {
+        "title": "追问：为什么 hooks 不走命令行",
+        "startTime": 187.25,
+        "endTime": 262.44
+      },
+      {
+        "title": "深挖：双向控制协议",
+        "startTime": 262.44,
+        "endTime": 361.62
+      },
+      {
+        "title": "追问：消息流里的坑",
+        "startTime": 361.62,
+        "endTime": 453.25
+      },
+      {
+        "title": "手撕：三个工具参数",
+        "startTime": 453.25,
+        "endTime": 530.44
+      },
+      {
+        "title": "追问：hook 和权限回调",
+        "startTime": 530.44,
+        "endTime": 599.29
+      },
+      {
+        "title": "收尾：总结一下",
+        "startTime": 599.29,
+        "endTime": 635.61
+      }
+    ],
+    "published_at": "2026-11-25T09:10:49+00:00"
+  },
+  {
+    "id": "2026-11-25-sdk-p2",
+    "seq": 3,
+    "title": "面试：Claude Agent SDK（下）权限、默认值和上生产",
+    "description": "挑刺面。面试官专挑候选人方案里的漏洞：权限的六步判定顺序、系统提示默认是空的、设置文件会不会被加载、会话怎么跨机器恢复、子 agent 的真正价值，以及四种写 agent 的方式怎么选。",
+    "format": "面试问答",
+    "sources": [
+      {
+        "title": "Claude Agent SDK：从懂 agent loop 到能扛住面试追问",
+        "url": "https://app.notion.com/p/41fd45e52667810aa442fd3a242ab458",
+        "last_edited": "2026-11-23T13:15:00Z"
+      }
+    ],
+    "url": "https://github.com/milesradford99/personal-podcast/releases/download/ep-2026-11-25-sdk-p2/2026-11-25-sdk-p2.mp3",
+    "bytes": 4689546,
+    "duration": 585.3,
+    "chapters": [
+      {
+        "title": "开场：你的方案安全吗",
+        "startTime": 0.0,
+        "endTime": 52.0
+      },
+      {
+        "title": "深挖：权限判定的六步",
+        "startTime": 52.0,
+        "endTime": 125.42
+      },
+      {
+        "title": "挑刺：规则不是沙箱",
+        "startTime": 125.42,
+        "endTime": 194.55
+      },
+      {
+        "title": "挑刺：为什么你的 agent 不像 Claude Code",
+        "startTime": 194.55,
+        "endTime": 295.25
+      },
+      {
+        "title": "深挖：会话存在哪",
+        "startTime": 295.25,
+        "endTime": 376.55
+      },
+      {
+        "title": "挑刺：子 agent 的真正价值",
+        "startTime": 376.55,
+        "endTime": 448.53
+      },
+      {
+        "title": "挑刺：上生产，你漏了什么",
+        "startTime": 448.53,
+        "endTime": 525.63
+      },
+      {
+        "title": "收尾：四种写法怎么选",
+        "startTime": 525.63,
+        "endTime": 585.32
+      }
+    ],
+    "published_at": "2026-11-25T09:12:47+00:00"
   }
 ]
