@@ -262,7 +262,20 @@ def main():
     ap.add_argument("--publish", action="store_true")
     ap.add_argument("--tts", choices=["edge", "dummy"], default="edge")
     ap.add_argument("--only", help="只渲染指定 id")
+    ap.add_argument("--lint", action="store_true", help="只检查朗读稿，不渲染")
     args = ap.parse_args()
+
+    if args.lint:
+        n = 0
+        for f in sorted(EPISODES_DIR.glob("*/episode.json")):
+            ep = json.loads(f.read_text(encoding="utf-8"))
+            if args.only and ep.get("id") != args.only:
+                continue
+            for w in lint(ep):
+                print(f"{ep.get('id')}：{w}")
+                n += 1
+        print(f"共 {n} 处提醒")
+        return
 
     index = load_index()
     done = {it["id"] for it in index}
