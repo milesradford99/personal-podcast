@@ -16,19 +16,21 @@ jobs:
     env:
       KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
       KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - name: 检查 Kaggle 令牌
         run: |
-          if [ -z "$KAGGLE_USERNAME" ] || [ -z "$KAGGLE_KEY" ]; then
-            echo "::error::仓库还没有设置 KAGGLE_USERNAME 和 KAGGLE_KEY 两个 secret"; exit 1
+          if [ -z "$KAGGLE_API_TOKEN" ] && [ -z "$KAGGLE_KEY" ]; then
+            echo "::error::仓库还没有设置 KAGGLE_API_TOKEN（或 KAGGLE_USERNAME+KAGGLE_KEY）"; exit 1
           fi
+          echo "token=${KAGGLE_API_TOKEN:+yes} key=${KAGGLE_KEY:+yes} user=${KAGGLE_USERNAME:+yes}"
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
-          pip install -q kaggle edge-tts mutagen
+          pip install -q "kaggle>=1.8.0" edge-tts mutagen
       - name: 在 Kaggle GPU 上合成
         run: python tools/kaggle_job.py --samples
       - name: 上传试听

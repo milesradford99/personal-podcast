@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """把待渲染的集交给 Kaggle 免费 GPU 用 Qwen3-TTS 合成，等它跑完，把逐句音频取回到 build/qwen/。
-在 GitHub Actions 里运行，需要环境变量 KAGGLE_USERNAME、KAGGLE_KEY。
+在 GitHub Actions 里运行，需要 KAGGLE_API_TOKEN（新令牌）或 KAGGLE_USERNAME+KAGGLE_KEY（旧版 kaggle.json）。
 用法：python tools/kaggle_job.py            # 合成所有未发布的集
       python tools/kaggle_job.py --samples  # 合成音色对比样本（第一集前两章，多种搭配）"""
+import re
 import argparse, base64, json, os, subprocess, sys, tarfile, time
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -48,16 +49,36 @@ def kaggle(*args, check=True):
     return r.stdout
 
 
+def clean_env():
+    # Actions 会把没设置的 secret 变成空字符串，空变量会干扰 kaggle CLI 选认证方式
+    for k in ("KAGGLE_USERNAME", "KAGGLE_KEY", "KAGGLE_API_TOKEN"):
+        if not os.environ.get(k, "").strip():
+            os.environ.pop(k, None)
+
+
+def kaggle_user():
+    u = os.environ.get("KAGGLE_USERNAME", "").strip()
+    if u:
+        return u
+    import subprocess
+    out = subprocess.run(["kaggle", "config", "view"], capture_output=True, text=True).stdout
+    m = re.search(r"username:\s*(\S+)", out)
+    if m and m.group(1).lower() != "none":
+        return m.group(1)
+    sys.exit("拿不到 Kaggle 用户名：请再加一个 KAGGLE_USERNAME secret")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--samples", action="store_true")
     args = ap.parse_args()
+    clean_env()
     eps = sample_episodes() if args.samples else pending_episodes()
     if not eps:
         print("没有待合成的集。")
         return
     jobs = {"model": QW["model"], "episodes": [{"id": ep["id"], "turns": turns_for(ep, v)} for ep, v in eps]}
-    user = os.environ["KAGGLE_USERNAME"]
+    user = kaggle_user()
     slug = f"{user}/podcast-qwen-tts"
     kdir = ROOT / "build" / "kaggle"
     kdir.mkdir(parents=True, exist_ok=True)
