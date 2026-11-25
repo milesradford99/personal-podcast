@@ -1,0 +1,30 @@
+name: 生成音色试听
+
+on:
+  push:
+    branches: [main]
+    paths: ["samples/**", ".github/workflows/voice-samples.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  samples:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install -q edge-tts
+      - name: 生成试听
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p out
+          edge-tts --list-voices > out/voices.txt
+          TEXT="好，那我们换个角度。假设你的缓存半夜被一个全表扫描冲掉了，第二天早上命中率归零，你会怎么排查？嗯，先别急着说加机器。"
+          for v in $(awk '/^zh-/ && /Female/ {print $1}' out/voices.txt) zh-CN-YunjianNeural zh-CN-YunxiNeural zh-CN-YunyangNeural; do
+            edge-tts --voice "$v" --rate=+5% --text "$TEXT" --write-media "out/$v.mp3" || echo "失败 $v"
+          done
+          ls -la out
+          gh release delete voice-samples --yes --cleanup-tag 2>/dev/null || true
+          gh release create voice-samples out/* --title "音色试听" --notes "中文音色试听样本" --prerelease
