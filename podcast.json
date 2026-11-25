@@ -8,7 +8,17 @@
   "notion_root": "https://app.notion.com/p/423d45e52667811ebec7cbf258ed3705",
   "per_run_minutes": 60,
   "voices": {
-    "A": {"name": "云健", "voice": "zh-CN-YunjianNeural", "rate": "+5%"},
-    "B": {"name": "晓晓", "voice": "zh-CN-XiaoxiaoNeural", "rate": "+5%"}
+    "A": {
+      "name": "云健",
+      "role": "候选人",
+      "voice": "zh-CN-YunjianNeural",
+      "rate": "+5%"
+    },
+    "B": {
+      "name": "晓伊",
+      "role": "面试官",
+      "voice": "zh-CN-XiaoyiNeural",
+      "rate": "+0%"
+    }
   }
 }

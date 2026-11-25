@@ -29,7 +29,8 @@ BUILD = ROOT / "build"
 EPISODES_DIR = ROOT / "episodes"
 INDEX_FILE = DOCS / "episodes.json"
 RATE = 24000
-LINE_GAP = 0.35
+LINE_GAP = 0.3       # 换人说话前的停顿
+SAME_SPK_GAP = 0.15  # 同一个人连续两句之间
 CHAPTER_GAP = 1.0
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{2,80}$")
 
@@ -74,7 +75,7 @@ async def synth_line(i, line, voices, tmp, backend, sem):
         return wav
     mp3 = tmp / f"l{i:05d}.mp3"
     async with sem:
-        await tts_edge(line["text"], spk["voice"], spk.get("rate", "+0%"), mp3)
+        await tts_edge(line["text"], spk["voice"], line.get("rate") or spk.get("rate", "+0%"), mp3)
     run(["ffmpeg", "-y", "-i", str(mp3), "-ac", "1", "-ar", str(RATE), str(wav)])
     return wav
 
@@ -92,16 +93,28 @@ async def render_episode(ep, backend):
         wavs = await asyncio.gather(*[
             synth_line(i, line, voices, tmp, backend, sem) for i, (_, line) in enumerate(flat)
         ])
-        gap_line, gap_ch = tmp / "gap_line.wav", tmp / "gap_ch.wav"
-        write_silence(gap_line, LINE_GAP)
-        write_silence(gap_ch, CHAPTER_GAP)
+        gaps = {}
 
-        parts, starts, t, prev_ch = [], {}, 0.0, None
-        for (ci, _), wav in zip(flat, wavs):
+        def gap_file(sec):
+            sec = round(max(0.0, min(3.0, float(sec))), 2)
+            if sec not in gaps:
+                gaps[sec] = tmp / f"gap_{int(sec * 100)}.wav"
+                write_silence(gaps[sec], sec)
+            return gaps[sec]
+
+        parts, starts, t, prev_ch, prev_spk = [], {}, 0.0, None, None
+        for (ci, line), wav in zip(flat, wavs):
             if prev_ch is not None:
-                g = gap_ch if ci != prev_ch else gap_line
+                if ci != prev_ch:
+                    sec = CHAPTER_GAP
+                elif "gap" in line:  # 脚本可指定停顿：抢话用 0.05，思考用 0.8
+                    sec = line["gap"]
+                else:
+                    sec = SAME_SPK_GAP if line["speaker"] == prev_spk else LINE_GAP
+                g = gap_file(sec)
                 parts.append(g)
                 t += wav_seconds(g)
+            prev_spk = line["speaker"]
             if ci not in starts:
                 starts[ci] = t
             parts.append(wav)

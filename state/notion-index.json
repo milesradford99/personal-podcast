@@ -5,8 +5,18 @@
       "category": "06-数据结构与算法",
       "url": "https://app.notion.com/p/423d45e5266781899c0ccb39404038c0",
       "last_edited": "2026-11-25T02:43:29Z",
-      "episodes": [{"id": "2026-11-25-cache-eviction", "format": "深度对谈", "made_from_edit": "2026-11-25T02:43:29Z"}]
+      "episodes": [
+        {
+          "id": "2026-11-25-cache-eviction",
+          "format": "面试问答",
+          "style": "标准技术面",
+          "made_from_edit": "2026-11-25T02:43:29Z"
+        }
+      ]
     }
   },
-  "rotation": {"last_format": "深度对谈", "last_category": "06-数据结构与算法", "last_solo_speaker": "B"}
+  "rotation": {
+    "last_style": "标准技术面",
+    "last_category": "06-数据结构与算法"
+  }
 }
