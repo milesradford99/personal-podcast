@@ -1,0 +1,45 @@
+{
+  "version": "1.2.0",
+  "chapters": [
+    {
+      "title": "开场：手写一个 LRU",
+      "startTime": 0.0,
+      "endTime": 88.52
+    },
+    {
+      "title": "追问：你这个 Put 有 bug",
+      "startTime": 88.52,
+      "endTime": 117.17
+    },
+    {
+      "title": "压力题：半夜的全表扫描",
+      "startTime": 117.17,
+      "endTime": 175.69
+    },
+    {
+      "title": "换思路：LFU 怎么做到 O(1)",
+      "startTime": 175.69,
+      "endTime": 252.23
+    },
+    {
+      "title": "LFU 的两个硬伤",
+      "startTime": 252.23,
+      "endTime": 295.82
+    },
+    {
+      "title": "Caffeine 凭什么命中率高",
+      "startTime": 295.82,
+      "endTime": 361.21
+    },
+    {
+      "title": "加分题：S3-FIFO 为什么不用锁",
+      "startTime": 361.21,
+      "endTime": 429.73
+    },
+    {
+      "title": "最后一问：Redis 为什么不用严格 LRU",
+      "startTime": 429.73,
+      "endTime": 516.76
+    }
+  ]
+}
