@@ -1,0 +1,40 @@
+name: Qwen3-TTS 音色对比（Kaggle GPU）
+
+on:
+  push:
+    branches: [main]
+    paths: ["samples/kaggle/**", ".github/workflows/qwen-kaggle-samples.yml", "tools/kaggle/**", "tools/kaggle_job.py"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  samples:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    env:
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: 检查 Kaggle 令牌
+        run: |
+          if [ -z "$KAGGLE_USERNAME" ] || [ -z "$KAGGLE_KEY" ]; then
+            echo "::error::仓库还没有设置 KAGGLE_USERNAME 和 KAGGLE_KEY 两个 secret"; exit 1
+          fi
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          pip install -q kaggle edge-tts mutagen
+      - name: 在 Kaggle GPU 上合成
+        run: python tools/kaggle_job.py --samples
+      - name: 上传试听
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp build/qwen/out/stats.txt out/ || true
+          gh release delete qwen-gpu-samples --yes --cleanup-tag 2>/dev/null || true
+          gh release create qwen-gpu-samples out/* --title "Qwen3-TTS 试听（Kaggle GPU）" --notes "$(cat out/stats.txt 2>/dev/null)" --prerelease

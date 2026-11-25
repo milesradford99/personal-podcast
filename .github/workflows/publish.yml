@@ -16,6 +16,10 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    timeout-minutes: 340
+    env:
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -24,7 +28,12 @@ jobs:
       - name: 安装依赖
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
-          pip install -q edge-tts mutagen
+          pip install -q edge-tts mutagen kaggle
+      - name: Qwen3-TTS：在 Kaggle GPU 上合成（podcast.json 的 engine 为 qwen 时）
+        run: |
+          if [ "$(python -c 'import json;print(json.load(open("podcast.json")).get("engine","edge"))')" = "qwen" ]; then
+            python tools/kaggle_job.py
+          fi
       - name: 渲染并上传
         env:
           GH_TOKEN: ${{ github.token }}

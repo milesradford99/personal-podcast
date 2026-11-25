@@ -70,9 +70,16 @@ async def tts_edge(text, voice, rate, pitch, out_mp3):
     raise RuntimeError(f"edge-tts 失败：{last}")
 
 
-async def synth_line(i, line, voices, tmp, backend, sem):
+QWEN_DIR = ROOT / "build" / "qwen" / "out"
+
+
+async def synth_line(i, line, voices, tmp, backend, sem, ep_id=None):
     spk = voices.get(line["speaker"]) or next(iter(voices.values()))
     wav = tmp / f"l{i:05d}.wav"
+    if backend == "files":  # Kaggle GPU 上用 Qwen3-TTS 合成好的逐句音频
+        src = QWEN_DIR / ep_id / f"t{i:04d}.wav"
+        run(["ffmpeg", "-y", "-i", str(src), "-af", TRIM, "-ac", "1", "-ar", str(RATE), str(wav)])
+        return wav
     if backend == "dummy":
         write_silence(wav, max(0.6, len(line["text"]) / 4.2))  # 约 4.2 字/秒
         return wav
@@ -126,7 +133,7 @@ async def render_episode(ep, backend):
         flat = merge_turns(ep)
         sem = asyncio.Semaphore(4)
         wavs = await asyncio.gather(*[
-            synth_line(i, line, voices, tmp, backend, sem) for i, (_, line) in enumerate(flat)
+            synth_line(i, line, voices, tmp, backend, sem, ep["id"]) for i, (_, line) in enumerate(flat)
         ])
         gaps = {}
 
@@ -260,7 +267,8 @@ def build_feed(items):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--publish", action="store_true")
-    ap.add_argument("--tts", choices=["edge", "dummy"], default="edge")
+    ap.add_argument("--tts", choices=["edge", "dummy", "files"], default=None,
+                    help="默认看 podcast.json 的 engine：edge 用 edge-tts，qwen 用 Kaggle 取回的逐句音频")
     ap.add_argument("--only", help="只渲染指定 id")
     ap.add_argument("--lint", action="store_true", help="只检查朗读稿，不渲染")
     args = ap.parse_args()
@@ -277,6 +285,8 @@ def main():
         print(f"共 {n} 处提醒")
         return
 
+    if args.tts is None:
+        args.tts = "files" if CONFIG.get("engine") == "qwen" else "edge"
     index = load_index()
     done = {it["id"] for it in index}
     todo = []
