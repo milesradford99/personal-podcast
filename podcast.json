@@ -9,11 +9,11 @@
   "per_run_minutes": 60,
   "voices": {
     "A": {
-      "name": "云健",
+      "name": "Brian",
       "role": "候选人",
-      "voice": "zh-CN-YunjianNeural",
-      "rate": "+0%",
-      "pitch": "-4Hz"
+      "voice": "en-US-BrianMultilingualNeural",
+      "rate": "+16%",
+      "pitch": "-3Hz"
     },
     "B": {
       "name": "晓伊",
