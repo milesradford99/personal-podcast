@@ -1,1 +1,62 @@
-[]
+[
+  {
+    "id": "2026-11-25-cache-eviction",
+    "seq": 1,
+    "title": "面试：缓存满了该扔谁？从 LRU 一路问到 S3-FIFO",
+    "description": "模拟面试。面试官从手写 LRU 开始追问：全表扫描怎么办、LFU 的坑、Caffeine 凭什么命中率高、S3-FIFO 为什么不用锁、Redis 为什么不用严格 LRU。",
+    "format": "面试问答",
+    "sources": [
+      {
+        "title": "07-缓存淘汰结构LRU与LFU",
+        "url": "https://app.notion.com/p/423d45e5266781899c0ccb39404038c0",
+        "last_edited": "2026-11-25T02:43:29Z"
+      }
+    ],
+    "url": "https://github.com/milesradford99/personal-podcast/releases/download/ep-2026-11-25-cache-eviction/2026-11-25-cache-eviction.mp3",
+    "bytes": 4174305,
+    "duration": 521.0,
+    "chapters": [
+      {
+        "title": "开场：手写一个 LRU",
+        "startTime": 0.0,
+        "endTime": 89.37
+      },
+      {
+        "title": "追问：你这个 Put 有 bug",
+        "startTime": 89.37,
+        "endTime": 118.04
+      },
+      {
+        "title": "压力题：半夜的全表扫描",
+        "startTime": 118.04,
+        "endTime": 176.56
+      },
+      {
+        "title": "换思路：LFU 怎么做到 O(1)",
+        "startTime": 176.56,
+        "endTime": 255.28
+      },
+      {
+        "title": "LFU 的两个硬伤",
+        "startTime": 255.28,
+        "endTime": 297.64
+      },
+      {
+        "title": "Caffeine 凭什么命中率高",
+        "startTime": 297.64,
+        "endTime": 364.31
+      },
+      {
+        "title": "加分题：S3-FIFO 为什么不用锁",
+        "startTime": 364.31,
+        "endTime": 433.29
+      },
+      {
+        "title": "最后一问：Redis 为什么不用严格 LRU",
+        "startTime": 433.29,
+        "endTime": 520.98
+      }
+    ],
+    "published_at": "2026-11-25T06:09:18+00:00"
+  }
+]

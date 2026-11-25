@@ -13,9 +13,9 @@
 <title>面试：缓存满了该扔谁？从 LRU 一路问到 S3-FIFO</title>
 <description>模拟面试。面试官从手写 LRU 开始追问：全表扫描怎么办、LFU 的坑、Caffeine 凭什么命中率高、S3-FIFO 为什么不用锁、Redis 为什么不用严格 LRU。</description>
 <guid isPermaLink="false">2026-11-25-cache-eviction</guid>
-<pubDate>Wed, 25 Nov 2026 05:38:34 +0000</pubDate>
-<enclosure url="https://github.com/milesradford99/personal-podcast/releases/download/ep-2026-11-25-cache-eviction/2026-11-25-cache-eviction.mp3" length="4140626" type="audio/mpeg"/>
-<itunes:duration>00:08:36</itunes:duration>
+<pubDate>Wed, 25 Nov 2026 06:09:18 +0000</pubDate>
+<enclosure url="https://github.com/milesradford99/personal-podcast/releases/download/ep-2026-11-25-cache-eviction/2026-11-25-cache-eviction.mp3" length="4174305" type="audio/mpeg"/>
+<itunes:duration>00:08:41</itunes:duration>
 <itunes:episode>1</itunes:episode>
 <itunes:episodeType>full</itunes:episodeType>
 <podcast:chapters url="https://milesradford99.github.io/personal-podcast/chapters/2026-11-25-cache-eviction.json" type="application/json+chapters"/>
