@@ -30,7 +30,7 @@ jobs:
           python-version: "3.12"
       - run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
-          pip install -q "kaggle>=1.8.0" edge-tts mutagen
+          pip install -q "kaggle>=1.8.0" six edge-tts mutagen
       - name: 在 Kaggle GPU 上合成
         run: python tools/kaggle_job.py --samples
       - name: 上传试听
